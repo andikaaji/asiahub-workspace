@@ -1,0 +1,57 @@
+name: asiahub-workspace
+services:
+  workspace:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: asiahub/workspace-portal:local
+    container_name: asiahub-workspace
+    restart: unless-stopped
+    depends_on:
+      deckcraft-web: { condition: service_healthy }
+      wordcraft-web: { condition: service_healthy }
+      pdfcraft-web: { condition: service_healthy }
+    ports:
+      - "127.0.0.1:${WORKSPACE_PORT:-8877}:8080"
+    networks: [autodev-net]
+
+  deckcraft-web:
+    build:
+      context: .
+      dockerfile: Dockerfile.craft
+      args:
+        APP_NAME: deckcraft
+        APP_VERSION: ${DECKCRAFT_VERSION:-0.11.1}
+    image: asiahub/workspace-deckcraft:${DECKCRAFT_VERSION:-0.11.1}
+    container_name: workspace-deckcraft-web
+    restart: unless-stopped
+    networks: [autodev-net]
+
+  wordcraft-web:
+    build:
+      context: .
+      dockerfile: Dockerfile.craft
+      args:
+        APP_NAME: wordcraft
+        APP_VERSION: ${WORDCRAFT_VERSION:-0.11.0}
+    image: asiahub/workspace-wordcraft:${WORDCRAFT_VERSION:-0.11.0}
+    container_name: workspace-wordcraft-web
+    restart: unless-stopped
+    networks: [autodev-net]
+
+  pdfcraft-web:
+    build:
+      context: .
+      dockerfile: Dockerfile.craft
+      args:
+        APP_NAME: pdfcraft
+        APP_VERSION: ${PDFCRAFT_VERSION:-0.14.0}
+    image: asiahub/workspace-pdfcraft:${PDFCRAFT_VERSION:-0.14.0}
+    container_name: workspace-pdfcraft-web
+    restart: unless-stopped
+    networks: [autodev-net]
+
+networks:
+  autodev-net:
+    external: true
+    name: autodev-net
