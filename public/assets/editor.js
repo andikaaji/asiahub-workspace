@@ -16,30 +16,38 @@
   const $ = id => document.getElementById(id);
   const rawUrl = `/${app}/editor/${location.search}${location.hash}`;
   document.title = `${name} — AsiaHub Workspace`;
-  $('app-title').textContent = $('app-crumb').textContent = name;
-  $('app-description').textContent = description;
+  $('app-title').textContent = name;
   $('app-icon').textContent = initial;
-  $('app-icon').style.setProperty('--app-color',color);
+  $('app-icon').style.setProperty('--app-accent',color);
   $('open-tab').href = rawUrl;
-  const stage=$('editor-stage'),toggle=$('focus-toggle'),exit=$('exit-focus');
-  const focused = () => document.fullscreenElement===stage || document.body.classList.contains('fallback-focus');
-  function sync() { const state=focused(); toggle.setAttribute('aria-pressed',String(state)); $('focus-label').textContent=state?'Keluar penuh':'Layar penuh'; exit.hidden=!state; }
-  async function leave() {
-    if(document.fullscreenElement===stage) { try { await document.exitFullscreen(); } catch (_) {} }
-    document.body.classList.remove('fallback-focus'); sync();
+  const root=document.querySelector('.workspace-editor');
+  const frame=$('craft-frame'),toggle=$('focus-toggle'),exit=$('exit-focus');
+  const focused=()=>root.classList.contains('focus-mode');
+  function sync() {
+    const active=focused();
+    toggle.setAttribute('aria-pressed',String(active));
+    $('focus-label').textContent=active?'Tutup fokus':'Fokus';
+    exit.hidden=!active;
   }
-  async function enter() {
-    if(stage.requestFullscreen) {
-      try { await stage.requestFullscreen({navigationUI:'hide'}); sync(); return; } catch (_) {}
-    }
-    document.body.classList.add('fallback-focus'); sync();
-  }
-  toggle.addEventListener('click',()=>{ void (focused()?leave():enter()); });
-  exit.addEventListener('click',()=>{void leave();});
-  document.addEventListener('fullscreenchange',sync);
-  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.body.classList.contains('fallback-focus'))void leave();});
-  const frame=$('craft-frame'); frame.title=name+' editor';
-  frame.addEventListener('load',()=>{$('loading').hidden=true;});
-  // An iframe load event does not mean the WebAssembly application has initialized.
-  frame.src=rawUrl; sync();
+  function leave() { root.classList.remove('focus-mode'); sync(); }
+  function enter() { root.classList.add('focus-mode'); sync(); }
+  toggle.addEventListener('click',()=>{ focused()?leave():enter(); });
+  exit.addEventListener('click',leave);
+  // Native browser fullscreen caused Android to return to a floating/small window.
+  // CSS focus mode preserves the full browser window and restores it on Escape.
+  const onEscape=e=>{ if(e.key==='Escape'&&focused())leave(); };
+  document.addEventListener('keydown',onEscape,true);
+  window.addEventListener('keydown',onEscape,true);
+  // Keyboard events inside a same-origin iframe do not bubble to the parent.
+  frame.addEventListener('load',()=>{
+    $('loading').hidden=true;
+    try {
+      frame.contentWindow.addEventListener('keydown',onEscape,true);
+      frame.contentDocument.addEventListener('keydown',onEscape,true);
+    } catch (_) { /* Visible exit button stays available. */ }
+    // iframe load is not proof the WASM application initialized.
+  });
+  frame.title=name+' editor';
+  frame.src=rawUrl;
+  sync();
 })();
