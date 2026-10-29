@@ -48,3 +48,23 @@ test('PhotoCraft split WASM parts are served without double gzip and stale cachi
   assert.match(editor, /location = \/app\/photocraft-web\.js/);
   assert.match(editor, /gzip off/);
 });
+
+test('each editor has a same-origin shell and a separate upstream editor route', () => {
+  const shell = read('public/editor.html');
+  const js = read('public/assets/editor.js');
+  const css = read('public/assets/editor.css');
+  for (const app of apps) {
+    assert.ok(proxy.includes(`location = /${app}/ {`));
+    assert.ok(proxy.includes(`location ^~ /${app}/editor/ {`));
+    assert.ok(js.includes(`${app}:[`));
+  }
+  for (const id of ['craft-frame','open-tab','focus-toggle','exit-focus']) assert.ok(shell.includes(`id="${id}"`));
+  assert.match(shell, /Kembali ke Workspace/);
+  assert.match(shell, /Belum tersimpan di server/);
+  assert.doesNotMatch(shell, /disimpan otomatis|File Saya|GB dari/);
+  assert.match(js, /requestFullscreen/);
+  assert.match(js, /exitFullscreen/);
+  assert.match(js, /fullscreenchange/);
+  assert.match(css, /editor-stage:fullscreen/);
+  assert.match(read('scripts/smoke-test.sh'), /photocraft\/editor\/app\/parts.txt/);
+});
