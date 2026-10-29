@@ -70,9 +70,9 @@ This repository's original landing page and original workspace logo are AsiaHub 
 
 ## Shared editor shell — Phase 1
 
-All seven links open a minimal AsiaHub Workspace shell at `/<app>/`, with back navigation, a new-tab option, and fullscreen/focus mode. The actual official editor is proxied at `/<app>/editor/` on the **same origin**, so each editor's relative WASM/JS assets continue to work. Query parameters like `?blank` or PdfCraft's `?file=` are forwarded. The existing homepage and Docker Compose services remain unchanged.
+All seven links open a minimal AsiaHub Workspace shell at `/<app>/`, with compact back navigation, a new-tab option, and a browser-viewport focus mode. The actual official editor is proxied at `/<app>/editor/` on the **same origin**, so each editor's relative WASM/JS assets continue to work. Query parameters like `?blank` or PdfCraft's `?file=` are forwarded. The existing homepage and Docker Compose services remain unchanged.
 
-No login, storage, sidebar, fake auto-save, or file manager is provided. All Craft editor file-open and save/download workflows remain intact; **download/export before leaving**. The host does not use `?host=parent` until an authenticated storage integration is built. Browser native fullscreen exits via Esc; if denied, the UI falls back to a viewport focus mode with a visible exit button.
+No login, storage, sidebar, fake auto-save, or file manager is provided. All Craft editor file-open and save/download workflows remain intact; **download/export before leaving**. The host does not use `?host=parent` until an authenticated storage integration is built. Phase 1 uses a **single compact workspace header (46 px desktop / 42 px small screens)** and CSS-only focus mode, not the browser Fullscreen API. This avoids Android Chrome restoring a small/floating window when Escape exits fullscreen. Press Esc to leave focus mode while the parent or the same-origin editor iframe has keyboard focus; the visible **Keluar fokus** button is also available. Focus mode returns to the normal full-browser editor layout, without a page reload. The Workspace and Tab baru links remain available in normal mode.
 
 ### Phase 2 (architecture proposal, not implemented)
 
