@@ -49,7 +49,7 @@ test('PhotoCraft split WASM parts are served without double gzip and stale cachi
   assert.match(editor, /gzip off/);
 });
 
-test('each editor has a same-origin shell and a separate upstream editor route', () => {
+test('compact shell retains all seven same-origin editor routes', () => {
   const shell = read('public/editor.html');
   const js = read('public/assets/editor.js');
   const css = read('public/assets/editor.css');
@@ -58,13 +58,26 @@ test('each editor has a same-origin shell and a separate upstream editor route',
     assert.ok(proxy.includes(`location ^~ /${app}/editor/ {`));
     assert.ok(js.includes(`${app}:[`));
   }
-  for (const id of ['craft-frame','open-tab','focus-toggle','exit-focus']) assert.ok(shell.includes(`id="${id}"`));
+  for (const id of ['craft-frame','open-tab','focus-toggle','exit-focus','app-title']) {
+    assert.ok(shell.includes(`id="${id}"`), `${id} missing`);
+  }
   assert.match(shell, /Kembali ke Workspace/);
-  assert.match(shell, /Belum tersimpan di server/);
-  assert.doesNotMatch(shell, /disimpan otomatis|File Saya|GB dari/);
-  assert.match(js, /requestFullscreen/);
-  assert.match(js, /exitFullscreen/);
-  assert.match(js, /fullscreenchange/);
-  assert.match(css, /editor-stage:fullscreen/);
+  assert.match(shell, /File lokal/);
+  assert.doesNotMatch(shell, /shell-controls|shell-app|shell-footer|disimpan otomatis|File Saya|GB dari/);
+  assert.doesNotMatch(js, /requestFullscreen|exitFullscreen|fullscreenchange/);
+  assert.match(js, /focus-mode/);
+  assert.match(js, /e.key==='Escape'/);
+  assert.match(js, /frame.contentWindow.addEventListener/);
+  assert.match(js, /frame.contentDocument.addEventListener/);
+  assert.match(css, /\.focus-mode \.editor-stage\{position:fixed;inset:0/);
+  assert.match(css, /@media\(max-width:560px\)/);
   assert.match(read('scripts/smoke-test.sh'), /photocraft\/editor\/app\/parts.txt/);
+});
+
+test('editor shell forwards URL flags to official embedded app', () => {
+  const js = read('public/assets/editor.js');
+  assert.match(js, /location.search/);
+  assert.match(js, /location.hash/);
+  assert.match(js, /frame.src=rawUrl/);
+  assert.doesNotMatch(js, /host=parent/);
 });
