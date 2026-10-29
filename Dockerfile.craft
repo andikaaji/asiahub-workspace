@@ -1,0 +1,32 @@
+# Official, checksum-verified Craft web releases. No Rust compilation required.
+FROM alpine:3.22 AS downloader
+ARG APP_NAME
+ARG APP_VERSION
+RUN apk add --no-cache ca-certificates curl unzip coreutils
+RUN set -eu; \
+  case "$APP_NAME" in deckcraft|wordcraft|pdfcraft|gridcraft|photocraft|filmcraft|vectorcraft) ;; *) echo "Unsupported app: $APP_NAME" >&2; exit 1;; esac; \
+  test -n "$APP_VERSION"; \
+  archive="${APP_NAME}-web-${APP_VERSION}.zip"; \
+  base="https://github.com/storytold/${APP_NAME}/releases/download/v${APP_VERSION}"; \
+  mkdir -p /tmp/archive /site; \
+  cd /tmp/archive; \
+  curl -fLSs --retry 4 --retry-delay 3 "${base}/${archive}" -o "${archive}"; \
+  curl -fLSs --retry 4 --retry-delay 3 "${base}/SHA256SUMS.txt" -o SHA256SUMS.txt; \
+  expected="$(awk -v f="$archive" '$2==f || $2=="*" f {print $1;exit}' SHA256SUMS.txt)"; \
+  test -n "$expected" || { echo "Checksum not found for $archive" >&2; exit 1; }; \
+  printf '%s  %s\n' "$expected" "$archive" | sha256sum -c -; \
+  unzip -q "$archive"; \
+  test -s "${APP_NAME}-web-${APP_VERSION}/index.html"; \
+  cp -R "${APP_NAME}-web-${APP_VERSION}/." /site/; \
+  if [ "$APP_NAME" = photocraft ]; then \
+    test -s /site/app/parts.txt; \
+    test -s /site/app/photocraft-web.js; \
+  else \
+    test -n "$(find /site -type f -name '*.wasm' -print -quit)"; \
+  fi
+
+FROM nginx:stable-alpine
+COPY nginx/editor.conf /etc/nginx/conf.d/default.conf
+COPY --from=downloader /site/ /usr/share/nginx/html/
+EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=4s --start-period=10s --retries=3 CMD wget -q -O /dev/null http://127.0.0.1:8080/ || exit 1

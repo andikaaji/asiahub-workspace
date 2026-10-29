@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#07172a">
+  <meta name="description" content="Buka editor Craft di AsiaHub Workspace, dengan tombol kembali dan mode fokus.">
+  <title>Editor — AsiaHub Workspace</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+  <link rel="stylesheet" href="/assets/editor.css">
+  <script defer src="/assets/editor.js"></script>
+</head>
+<body>
+  <main class="workspace-editor">
+    <header class="shell-header">
+      <a href="/" class="brand" aria-label="Kembali ke beranda AsiaHub Workspace">
+        <img src="/assets/workspace-mark.svg" alt="" width="32" height="32">
+        <span><strong>ASIAHUB</strong><small>WORKSPACE</small></span>
+      </a>
+      <div class="active-app" aria-label="Aplikasi aktif">
+        <span id="app-icon" class="app-icon" aria-hidden="true">◆</span>
+        <strong id="app-title">Editor</strong>
+      </div>
+      <div class="header-actions">
+        <span class="save-note" title="File tidak otomatis tersimpan di server. Simpan atau ekspor sebelum menutup editor.">File lokal · Simpan sebelum keluar</span>
+        <a href="/" class="home-shortcut" aria-label="Kembali ke Workspace">← <span>Workspace</span></a>
+        <a id="open-tab" class="outline-button" href="/" target="_blank" rel="noopener noreferrer" title="Buka editor langsung di tab baru">↗ <span>Tab baru</span></a>
+        <button id="focus-toggle" class="focus-button" type="button" aria-pressed="false" title="Aktifkan atau tutup mode fokus">⤢ <span id="focus-label">Fokus</span></button>
+      </div>
+    </header>
+    <div class="shell-main">
+      <section id="editor-stage" class="editor-stage" aria-label="Editor Craft" tabindex="-1">
+        <div id="loading" class="editor-loading" role="status"><span class="loading-ring" aria-hidden="true"></span><strong>Memuat editor…</strong><small>Editor pertama kali perlu mengunduh WebAssembly.</small></div>
+        <iframe id="craft-frame" title="Craft editor" allow="fullscreen; clipboard-read; clipboard-write; autoplay" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+        <button id="exit-focus" class="exit-focus" type="button" hidden aria-label="Keluar dari mode fokus">✕ <span>Keluar fokus</span></button>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

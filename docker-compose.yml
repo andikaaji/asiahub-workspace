@@ -1,0 +1,109 @@
+name: asiahub-workspace
+services:
+  workspace:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: asiahub/workspace-portal:local
+    container_name: asiahub-workspace
+    restart: unless-stopped
+    depends_on:
+      deckcraft-web: { condition: service_healthy }
+      wordcraft-web: { condition: service_healthy }
+      pdfcraft-web: { condition: service_healthy }
+      gridcraft-web: { condition: service_healthy }
+      photocraft-web: { condition: service_healthy }
+      filmcraft-web: { condition: service_healthy }
+      vectorcraft-web: { condition: service_healthy }
+    ports:
+      - "127.0.0.1:${WORKSPACE_PORT:-8877}:8080"
+    networks: [autodev-net]
+
+  deckcraft-web:
+    build:
+      context: .
+      dockerfile: Dockerfile.craft
+      args:
+        APP_NAME: deckcraft
+        APP_VERSION: ${DECKCRAFT_VERSION:-0.11.1}
+    image: asiahub/workspace-deckcraft:${DECKCRAFT_VERSION:-0.11.1}
+    container_name: workspace-deckcraft-web
+    restart: unless-stopped
+    networks: [autodev-net]
+
+  wordcraft-web:
+    build:
+      context: .
+      dockerfile: Dockerfile.craft
+      args:
+        APP_NAME: wordcraft
+        APP_VERSION: ${WORDCRAFT_VERSION:-0.11.0}
+    image: asiahub/workspace-wordcraft:${WORDCRAFT_VERSION:-0.11.0}
+    container_name: workspace-wordcraft-web
+    restart: unless-stopped
+    networks: [autodev-net]
+
+  pdfcraft-web:
+    build:
+      context: .
+      dockerfile: Dockerfile.craft
+      args:
+        APP_NAME: pdfcraft
+        APP_VERSION: ${PDFCRAFT_VERSION:-0.14.0}
+    image: asiahub/workspace-pdfcraft:${PDFCRAFT_VERSION:-0.14.0}
+    container_name: workspace-pdfcraft-web
+    restart: unless-stopped
+    networks: [autodev-net]
+
+  gridcraft-web:
+    build:
+      context: .
+      dockerfile: Dockerfile.craft
+      args:
+        APP_NAME: gridcraft
+        APP_VERSION: ${GRIDCRAFT_VERSION:-0.13.0}
+    image: asiahub/workspace-gridcraft:${GRIDCRAFT_VERSION:-0.13.0}
+    container_name: workspace-gridcraft-web
+    restart: unless-stopped
+    networks: [autodev-net]
+
+  photocraft-web:
+    build:
+      context: .
+      dockerfile: Dockerfile.craft
+      args:
+        APP_NAME: photocraft
+        APP_VERSION: ${PHOTOCRAFT_VERSION:-0.17.0}
+    image: asiahub/workspace-photocraft:${PHOTOCRAFT_VERSION:-0.17.0}
+    container_name: workspace-photocraft-web
+    restart: unless-stopped
+    networks: [autodev-net]
+
+  filmcraft-web:
+    build:
+      context: .
+      dockerfile: Dockerfile.craft
+      args:
+        APP_NAME: filmcraft
+        APP_VERSION: ${FILMCRAFT_VERSION:-0.14.0}
+    image: asiahub/workspace-filmcraft:${FILMCRAFT_VERSION:-0.14.0}
+    container_name: workspace-filmcraft-web
+    restart: unless-stopped
+    networks: [autodev-net]
+
+  vectorcraft-web:
+    build:
+      context: .
+      dockerfile: Dockerfile.craft
+      args:
+        APP_NAME: vectorcraft
+        APP_VERSION: ${VECTORCRAFT_VERSION:-0.18.0}
+    image: asiahub/workspace-vectorcraft:${VECTORCRAFT_VERSION:-0.18.0}
+    container_name: workspace-vectorcraft-web
+    restart: unless-stopped
+    networks: [autodev-net]
+
+networks:
+  autodev-net:
+    external: true
+    name: autodev-net
