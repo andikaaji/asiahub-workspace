@@ -1,97 +1,69 @@
-# AsiaHub Workspace
+# AsiaHub Workspace — Seven Craft editors
 
-Browser-first launchpad for three independent Craft editors, presented through **one domain and three same-origin context paths**.
+Premium, responsive, browser-based workspace at **https://workspace.asiahub.id**. A separate static Nginx image serves each editor. The workspace Nginx routes all editors on the **same origin** with paths under `/` (no iframe, no external redirects). An existing AutoDev gateway must handle TLS and any access controls.
 
-| URL | Service | Upstream project | Web release |
+## Editor registry
+
+| Path | Compose service | Upstream | Pinned web release |
 |---|---|---|---|
-| `https://workspace.asiahub.id/` | `workspace:8080` | This portal | local |
-| `https://workspace.asiahub.id/deckcraft/` | `deckcraft-web:8080` | [DeckCraft](https://github.com/storytold/deckcraft) | `v0.11.1` |
-| `https://workspace.asiahub.id/wordcraft/` | `wordcraft-web:8080` | [WordCraft](https://github.com/storytold/wordcraft) | `v0.11.0` |
-| `https://workspace.asiahub.id/pdfcraft/` | `pdfcraft-web:8080` | [PdfCraft](https://github.com/storytold/pdfcraft) | `v0.14.0` |
+| `/deckcraft/` | `deckcraft-web:8080` | https://github.com/storytold/deckcraft | `v0.11.1` |
+| `/wordcraft/` | `wordcraft-web:8080` | https://github.com/storytold/wordcraft | `v0.11.0` |
+| `/pdfcraft/` | `pdfcraft-web:8080` | https://github.com/storytold/pdfcraft | `v0.14.0` |
+| `/gridcraft/` | `gridcraft-web:8080` | https://github.com/storytold/gridcraft | `v0.13.0` |
+| `/photocraft/` | `photocraft-web:8080` | https://github.com/storytold/photocraft | `v0.17.0` |
+| `/filmcraft/` | `filmcraft-web:8080` | https://github.com/storytold/filmcraft | `v0.14.0` |
+| `/vectorcraft/` | `vectorcraft-web:8080` | https://github.com/storytold/vectorcraft | `v0.18.0` |
+
+All upstream packages are loaded from GitHub Releases by `Dockerfile.craft`, checked against **SHA256SUMS.txt**, then served by Nginx. We don't compile Rust on the VPS or vendor upstream code. Avoid auto-updating untested upstream versions; bump a corresponding `*_VERSION` in `.env` deliberately and re-run smoke/UAT. Official static releases use relative URLs. The version in `.env.example` is the default for this snapshot.
 
 ## Architecture
 
 ```text
-Android / desktop browser
-  https://workspace.asiahub.id
-     |
-     v
-Existing AutoDev HTTPS gateway (auth / TLS configured separately)
-     |
-     v
-workspace (Nginx :8080) ── /          -> Portal HTML/CSS/JS
-        |                ├─ /deckcraft/ -> deckcraft-web:8080/
-        |                ├─ /wordcraft/ -> wordcraft-web:8080/
-        |                └─ /pdfcraft/  -> pdfcraft-web:8080/
-     autodev-net (existing external Docker network)
+Android / laptop  https://workspace.asiahub.id
+        |
+        v
+AutoDev HTTPS gateway (existing, configure outside this repository)
+        |
+        v
+workspace:8080 (Nginx static premium landing + seven prefix routes)
+   ├── /             => portal HTML/CSS/JS
+   ├── /deckcraft/   => deckcraft-web:8080/
+   ├── /wordcraft/   => wordcraft-web:8080/
+   ├── /pdfcraft/    => pdfcraft-web:8080/
+   ├── /gridcraft/   => gridcraft-web:8080/
+   ├── /photocraft/  => photocraft-web:8080/
+   ├── /filmcraft/   => filmcraft-web:8080/
+   └── /vectorcraft/ => vectorcraft-web:8080/
 ```
 
-The editor applications are **prebuilt upstream WASM static sites**, not Node services and not headless desktop sessions. Their releases are downloaded and verified against upstream `SHA256SUMS.txt` during Docker build. The three browserside apps use relative asset URLs, and the proxy strips each context path before forwarding requests. No database, Redis or GPU server required for this phase.
-
-## AutoDev import / VPS deployment
-
-1. Import this GitHub branch/ZIP into AutoDev. Repository files, `Dockerfile`, `Dockerfile.craft`, `docker-compose.yml`, and `.env.example` must remain in the root.
-2. Set the environment in **`.env.example` before importing** (AutoDev normally copies it to `.env`); defaults are shown below.
-3. On the AutoDev VPS, confirm the external network exists (or create once):
-
-   ```sh
-   docker network inspect autodev-net >/dev/null 2>&1 || docker network create autodev-net
-   ```
-
-4. Launch from `/project/asiahub-workspace`:
-
-   ```sh
-   cp -n .env.example .env
-   docker compose up -d --build
-   docker compose ps
-   sh scripts/smoke-test.sh
-   ```
-
-5. Configure the **existing AutoDev gateway** to proxy HTTPS host `workspace.asiahub.id` to service `workspace:8080` on `autodev-net` (or host `127.0.0.1:8877` if routing from the VPS host). Do **not** add three public domains. Only the portal is exposed on loopback; editor services have no published host ports.
-6. Ensure DNS for `workspace.asiahub.id` targets the VPS, TLS certificate is valid, and gateway authentication/access policy is applied before exposing it to the Internet.
-
-`.env.example`:
-
-```dotenv
-WORKSPACE_PORT=8877
-DECKCRAFT_VERSION=0.11.1
-WORDCRAFT_VERSION=0.11.0
-PDFCRAFT_VERSION=0.14.0
-```
-
-If AutoDev changes build or Compose settings, preserve the context prefixes and external `autodev-net`. **Do not publish editor container ports** to the public internet.
-
-## How local file editing works
-
-1. Open `workspace.asiahub.id` from Android tablet, mobile or desktop.
-2. Choose WordCraft, DeckCraft or PdfCraft.
-3. Use the editor's built-in **File > Open** picker to select DOCX, PPTX or PDF from the device.
-4. Save/export through the editor. Browser downloads (and platform-specific file save dialogs) send the updated file **to the device**, not the VPS.
-
-There is **no server-side document storage, login, autosave or shared file browser** in this phase. The existing AutoDev gateway should restrict who can reach the editors. WordCraft and PdfCraft support their `?host=parent` bridge for a future same-origin portal / S3 storage integration, but this starter does not wire that bridge yet. DeckCraft may need its own API / bridge enhancements for future server persistence.
-
-## Validation / troubleshooting
+## AutoDev setup and UAT
 
 ```sh
-node --version
-npm test                         # no dependency install needed
-node --check public/assets/app.js
-sh -n scripts/smoke-test.sh
-docker compose config           # config only, no build
-nginx -t                        # if running on a host with matching nginx configuration
-sh scripts/smoke-test.sh       # requires running containers
+cp .env.example .env
+# ensure external network autodev-net exists (normally created by AutoDev)
+docker network inspect autodev-net >/dev/null 2>&1 || docker network create autodev-net
+docker compose up -d --build
+docker compose ps
+sh scripts/smoke-test.sh
 ```
 
-If editors load blank: check browser developer console for WebGPU/WebGL2 availability and WASM MIME (`application/wasm`). Open `/deckcraft/?webgl` or `/wordcraft/?webgl` to force WebGL2 where supported. For large files, editing runs in browser memory and may use significant RAM on Android.
+Gateway route: **`workspace.asiahub.id` → `workspace:8080`** on `autodev-net`, HTTPS enabled; or map to `127.0.0.1:8877` from a host-level reverse proxy. Do not create seven separate domain routes in the outer gateway: `workspace` handles the context paths. If using AutoDev's source importer, import this entire repo (PR branch for UAT), preserve `docker-compose.yml`, and point the gateway at the workspace service.
 
-If Docker image fails downloading a release: confirm outbound HTTPS to GitHub, correct version in `.env.example`, exact `*-web-<version>.zip` and `SHA256SUMS.txt` assets in that upstream release. Do not skip checksum verification.
+Sanity checks before deployment: `npm test`, `node --check public/assets/app.js`, `nginx -t` with the supplied configs in containers, then Docker build and real browser UAT. `scripts/smoke-test.sh` expects the complete stack running, verifies each context path and 308 redirect, and verifies PhotoCraft's `app/parts.txt`.
 
-### Content ownership and security
+## Special handling
 
-The portal is a custom AsiaHub implementation. DeckCraft, WordCraft and PdfCraft are upstream open-source applications under their own license terms. ArtCraft names and logos are separately protected; do not imply endorsement or reuse the original ArtCraft trademarks in your fork's own brand. The portal uses an original AsiaHub-style geometric monogram placeholder rather than copying the official AsiaHub brand artwork; replace it once the licensed official logo asset is available.
+- **PhotoCraft** packages its web WASM as compressed `.part-*` assets. Serve these as exact bytes without `Content-Encoding` and without gzip recompression. Its unversioned `app/photocraft-web.js` and `app/parts.txt` must revalidate (no-cache). All are provided by `nginx/editor.conf`.
+- **FilmCraft** can use WebCodecs, WebGPU, OPFS, and browser file handles; editing and exporting large media on Android may be constrained by RAM/codec support. UAT on real devices with short MP4 before trying large projects. Its browser recovery is stored locally in OPFS, not on the VPS.
+- **VectorCraft** web release may include a `fonts/` folder. The static site is copied fully; do not omit it.
+- WebGPU requires HTTPS or localhost. Most editors fall back to WebGL2; performance depends on the client device, not server GPU. Check each app on Android Chrome and desktop Chrome.
+- This is a **portal**, not a centralized file manager or shared editing service. File Open/Save is handled by each editor/browser; no database/Redis/server file storage. Do not close tabs before saving and downloading. A browser may clear local storage/OPFS independently of server-side Docker volumes.
+- Independent Craft repositories are MIT/Apache-2.0 licensed; their **ArtCraft brand assets have separate restrictions**. This landing uses an original AsiaHub Workspace SVG mark, and does not rebrand or imply official endorsement by upstream projects.
 
-Server-side security for Phase 2 must include auth, file limits, content-type checking, quotas, encryption, auditing, access control, and versioned backups. **Same-origin URLs alone do not provide authentication.**
+## Extending beyond seven
 
-## Adding a fourth editor later
+Add a new editor in `docker-compose.yml`, `Dockerfile.craft` allowlist, `nginx/workspace.conf` (`/{app}` redirect and `/{app}/` proxy), and one card in `public/index.html`; update the smoke and unit tests. Keep the upstream static web assets unchanged, with relative URLs and hash-sensitive caching.
 
-Add the new card in `public/index.html`, its relevant CSS in `public/assets/styles.css`, a service in `docker-compose.yml`, and matching `location = /...` / `location ^~ /.../` blocks in `nginx/workspace.conf`. If upstream produces a WASM static release it can reuse `Dockerfile.craft` after its allowed app name is audited and added. Do not dynamically proxy arbitrary user-supplied hostnames.
+## Files and licenses
+
+This repository's original landing page and original workspace logo are AsiaHub implementation assets. Upstream editor images, when downloaded in the image build, retain their own license and notice files. The seven Craft projects remain independent upstream projects.

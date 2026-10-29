@@ -11,6 +11,10 @@ services:
       deckcraft-web: { condition: service_healthy }
       wordcraft-web: { condition: service_healthy }
       pdfcraft-web: { condition: service_healthy }
+      gridcraft-web: { condition: service_healthy }
+      photocraft-web: { condition: service_healthy }
+      filmcraft-web: { condition: service_healthy }
+      vectorcraft-web: { condition: service_healthy }
     ports:
       - "127.0.0.1:${WORKSPACE_PORT:-8877}:8080"
     networks: [autodev-net]
@@ -48,6 +52,54 @@ services:
         APP_VERSION: ${PDFCRAFT_VERSION:-0.14.0}
     image: asiahub/workspace-pdfcraft:${PDFCRAFT_VERSION:-0.14.0}
     container_name: workspace-pdfcraft-web
+    restart: unless-stopped
+    networks: [autodev-net]
+
+  gridcraft-web:
+    build:
+      context: .
+      dockerfile: Dockerfile.craft
+      args:
+        APP_NAME: gridcraft
+        APP_VERSION: ${GRIDCRAFT_VERSION:-0.13.0}
+    image: asiahub/workspace-gridcraft:${GRIDCRAFT_VERSION:-0.13.0}
+    container_name: workspace-gridcraft-web
+    restart: unless-stopped
+    networks: [autodev-net]
+
+  photocraft-web:
+    build:
+      context: .
+      dockerfile: Dockerfile.craft
+      args:
+        APP_NAME: photocraft
+        APP_VERSION: ${PHOTOCRAFT_VERSION:-0.17.0}
+    image: asiahub/workspace-photocraft:${PHOTOCRAFT_VERSION:-0.17.0}
+    container_name: workspace-photocraft-web
+    restart: unless-stopped
+    networks: [autodev-net]
+
+  filmcraft-web:
+    build:
+      context: .
+      dockerfile: Dockerfile.craft
+      args:
+        APP_NAME: filmcraft
+        APP_VERSION: ${FILMCRAFT_VERSION:-0.14.0}
+    image: asiahub/workspace-filmcraft:${FILMCRAFT_VERSION:-0.14.0}
+    container_name: workspace-filmcraft-web
+    restart: unless-stopped
+    networks: [autodev-net]
+
+  vectorcraft-web:
+    build:
+      context: .
+      dockerfile: Dockerfile.craft
+      args:
+        APP_NAME: vectorcraft
+        APP_VERSION: ${VECTORCRAFT_VERSION:-0.18.0}
+    image: asiahub/workspace-vectorcraft:${VECTORCRAFT_VERSION:-0.18.0}
+    container_name: workspace-vectorcraft-web
     restart: unless-stopped
     networks: [autodev-net]
 
